@@ -94,7 +94,7 @@
  *        - If missing email OR password:
  *            return res.status(400).json({ error: "Email and password are required" });
  *   3) Find user by email:
- *        const user = users.find((u) => u.email === email);
+ *        const user = users.find((u)  => u.email === email);
  *        - If NOT found:
  *            return res.status(400).json({ error: "User not found" });
  *   4) Compare passwords with bcrypt:
@@ -273,6 +273,29 @@ app.post("/register", async (req, res) => {
 // =========================
 app.post("/login", async (req, res) => {
   // Implement logic here based on the TODO 2.
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res .status(400).json({ error: "Email and password are required"});
+  }
+
+  const user = users.find((u) => u.email === email);
+  if (!user) {
+    return res.status(400).json({ error: "User not found" });
+  }
+
+  try {
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Wrong password" });
+    }
+
+    const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: "1h" });
+    return res.json({ token });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ error: "Server error during login" });
+  }
 });
 
 // =========================
